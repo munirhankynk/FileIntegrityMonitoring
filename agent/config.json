@@ -1,0 +1,12 @@
+{
+    "backend_url": "http://localhost:8080",
+    "agent_id": "2dbf8e9e-dbbf-495c-a45f-d32d63083148",
+    "activation_token": "5fd0c7f0-a59b-4439-8843-e239aa4d93ec",
+    "username": "lebronbaba1",
+    "password": "123456",
+    "watch_dirs": [
+        "C:\\Users\\Labran\\Documents",
+        "C:\\Users\\Labran\\Desktop\\codes"
+    ],
+    "heartbeat_interval": 5
+}
