@@ -8,6 +8,7 @@ import com.example.fileintegrity.repository.FileEventRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,6 +37,16 @@ public class FileEventService {
         fileEvent.setTimestamp(LocalDateTime.now());
 
         fileEventRepository.save(fileEvent);
+    }
+    public List<FileEvent> find(UUID agentId, String eventType, LocalDateTime from, LocalDateTime to) {
+        // basit/performanssız ama çalışır; prod için Specification önerilir
+        List<FileEvent> all = fileEventRepository.findAll();
+        return all.stream()
+                .filter(e -> agentId == null || e.getAgent().getAgentId().equals(agentId))
+                .filter(e -> eventType == null || e.getEventType().equalsIgnoreCase(eventType))
+                .filter(e -> from == null || !e.getTimestamp().isBefore(from))
+                .filter(e -> to == null || !e.getTimestamp().isAfter(to))
+                .toList();
     }
 }
 

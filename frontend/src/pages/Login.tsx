@@ -1,51 +1,43 @@
-import { useState } from "react";
-import { login } from "../api/auth";
+import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login } from "../api/auth";
 import { useAuth } from "../store/auth";
 
 export default function Login() {
   const nav = useNavigate();
   const { setAuthed, setUser } = useAuth();
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [username, setU] = useState("");
+  const [password, setP] = useState("");
+  const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(null); setLoading(true);
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    setLoading(true);
     try {
-      await login(form);
+      await login({ username, password });
       setAuthed(true);
-      setUser(form.username);
+      setUser(username);
       nav("/", { replace: true });
-    } catch (err: any) {
-      setError(err?.response?.data || "Login failed");
-    } finally { setLoading(false); }
+    } catch (ex: any) {
+      setErr(ex?.response?.data?.message ?? "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-gray-50 p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-white rounded-2xl p-6 shadow">
-        <h1 className="text-xl font-semibold mb-4">Sign in</h1>
-
-        <label className="block text-sm mb-1">Username</label>
-        <input
-          className="w-full border rounded-xl px-3 py-2 mb-3"
-          value={form.username}
-          onChange={(e)=>setForm({...form, username:e.target.value})}
-        />
-
-        <label className="block text-sm mb-1">Password</label>
-        <input
-          type="password"
-          className="w-full border rounded-xl px-3 py-2 mb-4"
-          value={form.password}
-          onChange={(e)=>setForm({...form, password:e.target.value})}
-        />
-
-        {error && <div className="text-red-600 text-sm mb-3">{String(error)}</div>}
-
-        <button disabled={loading} className="w-full rounded-xl border px-3 py-2">
-          {loading ? "Signing in…" : "Sign in"}
+    <div className="mx-auto max-w-sm pt-24">
+      <h1 className="text-xl font-semibold mb-4">Sign in</h1>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <input className="w-full border px-3 py-2 rounded" placeholder="Username"
+               value={username} onChange={(e)=>setU(e.target.value)} />
+        <input className="w-full border px-3 py-2 rounded" type="password" placeholder="Password"
+               value={password} onChange={(e)=>setP(e.target.value)} />
+        {err && <div className="text-red-600 text-sm">{err}</div>}
+        <button disabled={loading} className="px-4 py-2 rounded bg-black text-white">
+          {loading ? "Signing in…" : "Login"}
         </button>
       </form>
     </div>

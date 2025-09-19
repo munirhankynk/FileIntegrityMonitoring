@@ -2,8 +2,10 @@ package com.example.fileintegrity.security;
 
 import com.example.fileintegrity.service.UserService;
 import com.example.fileintegrity.util.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -29,42 +31,38 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
     private final UserService userService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
-
-    public SecurityConfig(UserService userService,
-                          BCryptPasswordEncoder bCryptPasswordEncoder,
-                          HandlerExceptionResolver handlerExceptionResolver,
-                          JwtService jwtService) {
-        this.userService = userService;
-        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-        this.handlerExceptionResolver = handlerExceptionResolver;
-        this.jwtService = jwtService;
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtAuthFilter jwtAuthFilterInstance = new JwtAuthFilter(jwtService, userService, handlerExceptionResolver);
 
         return http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(req ->
-                        req.requestMatchers("/auth/login/**",
-                                        "/api/v1/public/authentication/**",
-                                          "/api/v1/public/authentication/**",
-                                        "/api/v1/public/authentication/logout",
-                                        "/swagger-ui/**"
-                                ).permitAll()
-                                .requestMatchers("/api/v1/**").authenticated()
-                                .requestMatchers("/api/agent/**").authenticated()
-                                .requestMatchers("/user/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/auth/signup/**")
-                                .hasAnyRole("STAFF_ADMIN","STAFF_ACCOUNT_MANAGER")
-                                .anyRequest().denyAll()
+                .authorizeHttpRequests(req -> req
+                        // Public endpoints
+                        .requestMatchers("/api/v1/public/authentication/**").permitAll()
+                        .requestMatchers("/api/v1/public/user/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Agent CLI için gerekirse (ör: aktivasyon public olacaksa)
+                        .requestMatchers("/api/agent/activate").permitAll()
+
+                        // Protected endpoints
+                        .requestMatchers("/api/v1/**").authenticated()
+                        .requestMatchers("/api/agent/**").authenticated()
+                        .requestMatchers("/user/admin/**").hasRole("ADMIN")
+
+                        // Staff örneği
+                        .requestMatchers("/auth/signup/**").hasAnyRole("STAFF_ADMIN", "STAFF_ACCOUNT_MANAGER")
+
+                        .anyRequest().denyAll()
                 )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -75,8 +73,6 @@ public class SecurityConfig {
                 )
                 .build();
     }
-
-    // BCryptPasswordEncoder bean'i kaldırdık artık ayrı sınıftan geliyo
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -93,24 +89,46 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request, response, exception) -> handlerExceptionResolver.resolveException(request, response, null, exception);
+        return (request, response, exception) ->
+                handlerExceptionResolver.resolveException(request, response, null, exception);
     }
 
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, exception) -> handlerExceptionResolver.resolveException(request, response, null, exception);
+        return (request, response, exception) ->
+                handlerExceptionResolver.resolveException(request, response, null, exception);
     }
 
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:3000");
-        config.addAllowedOrigin("http://localhost:3001");
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+
+        config.setAllowedOrigins(List.of(
+                "https://localhost:5173", // Vite dev (HTTPS)
+                "http://localhost:5173",  // Vite dev (HTTP fallback)
+                "http://localhost:3000",
+                "http://localhost:3001"
+        ));
+
         config.setAllowCredentials(true);
+
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        config.setAllowedHeaders(List.of(
+                HttpHeaders.AUTHORIZATION,
+                HttpHeaders.CONTENT_TYPE,
+                "X-Requested-With",
+                "X-XSRF-TOKEN"
+        ));
+
+        config.setExposedHeaders(List.of(
+                HttpHeaders.AUTHORIZATION,
+                HttpHeaders.SET_COOKIE
+        ));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
 }
+

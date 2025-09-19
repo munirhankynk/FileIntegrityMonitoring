@@ -1,7 +1,9 @@
 package com.example.fileintegrity.controller;
 
 
+import com.example.fileintegrity.dto.AgentDto;
 import com.example.fileintegrity.dto.CreateAgentRequest;
+import com.example.fileintegrity.dto.DirectoryDto;
 import com.example.fileintegrity.model.Agent;
 import com.example.fileintegrity.model.WatchedDirectory;
 import com.example.fileintegrity.service.AgentService;
@@ -25,7 +27,34 @@ public class AgentController {
     private final AgentService agentService;
     private final WatchedDirectoryService watchedDirectoryService;
 
-    // Agent CLI tarafında kullanılacak aktivasyon endpoint'i
+    @GetMapping("/list")
+    public ResponseEntity<List<AgentDto>> listAgents() {
+        List<Agent> agents = agentService.findAll();
+        List<AgentDto> payload = agents.stream()
+                .map(this::toAgentDto)
+                .toList();
+        return ResponseEntity.ok(payload);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AgentDto> getAgent(@PathVariable("id") UUID id) {
+        Agent a = agentService.findByIdOrThrow(id);
+        return ResponseEntity.ok(toAgentDto(a));
+    }
+
+    @GetMapping("/directories")
+    public ResponseEntity<List<DirectoryDto>> getDirectories(@RequestParam("agentId") UUID agentId) {
+        List<WatchedDirectory> list = watchedDirectoryService.getDirectoriesByAgentId(agentId);
+        List<DirectoryDto> payload = list.stream()
+                .map(d -> new DirectoryDto(
+                        d.getId(),
+                        d.getAgent().getAgentId(),   // entity’n göre
+                        d.getPath()
+                ))
+                .toList();
+        return ResponseEntity.ok(payload);
+    }
+
     @PostMapping("/activate")
     public ResponseEntity<?> activateAgent(@RequestBody Map<String, String> request) {
         String token = request.get("activationToken");
@@ -100,6 +129,14 @@ public class AgentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Silme işlemi başarısız: " + e.getMessage());
         }
+    }
+    private AgentDto toAgentDto(Agent a) {
+        AgentDto dto = new AgentDto();
+        dto.setId(a.getAgentId());
+        dto.setName(a.getAgentName());
+        dto.setStatus(a.isActive() ? "active" : "inactive");
+        dto.setLastHeartbeat(a.getLastHeartbeat());
+        return dto;
     }
 }
 

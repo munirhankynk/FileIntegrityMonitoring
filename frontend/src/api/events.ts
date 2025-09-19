@@ -3,17 +3,14 @@ import api from "./client";
 export type EventDto = {
   id: string;
   agentId: string;
-  path: string;
+  filePath: string;
   eventType: "created" | "modified" | "deleted";
   timestamp: string;
 };
 
-export type EventFilters = {
+export const listEvents = (p: {
   agentId?: string;
   eventType?: string;
-  from?: string; 
-  to?: string;   
-};
-
-export const listEvents = (filters: EventFilters) =>
-  api.get<EventDto[]>("/events", { params: filters });
+  from?: string; // ISO 'YYYY-MM-DDTHH:mm'
+  to?: string;   // ISO
+}) => api.get<EventDto[]>("/api/v1/agent/events", { params: p });

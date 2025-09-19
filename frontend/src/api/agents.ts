@@ -1,11 +1,11 @@
 import api from "./client";
 
 export type AgentDto = {
-  id: string;
+  id: string;                     // UUID
   name: string;
-  status: "active" | "inactive";
-  lastHeartbeat: string;
+  status: string;                 // "active" | "inactive"
+  lastHeartbeat: string;          // LocalDateTime -> ISO string
 };
 
-export const listAgents = () => api.get<AgentDto[]>("/agents");
-export const getAgent = (id: string) => api.get<AgentDto>(`/agents/${id}`);
+export const listAgents = () => api.get<AgentDto[]>("/api/agent/list");
+export const getAgent   = (id: string) => api.get<AgentDto>(`/api/agent/${id}`);

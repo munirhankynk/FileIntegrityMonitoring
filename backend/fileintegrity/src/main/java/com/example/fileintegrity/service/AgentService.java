@@ -3,22 +3,31 @@ package com.example.fileintegrity.service;
 
 import com.example.fileintegrity.model.Agent;
 import com.example.fileintegrity.repository.AgentRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
+
 public class AgentService {
 
     private final AgentRepository agentRepository;
 
-    public AgentService(AgentRepository agentRepository) {
-        this.agentRepository = agentRepository;
+    public List<Agent> findAll() {
+        return agentRepository.findAll();
+    }
+
+    public Agent findByIdOrThrow(UUID id) {
+        return agentRepository.findByAgentId(id)
+                .orElseThrow(() -> new NoSuchElementException("Agent not found: " + id));
     }
 
     @Transactional

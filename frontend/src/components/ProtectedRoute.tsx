@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { me } from "../api/auth";
 import { useAuth } from "../store/auth";
 
-export default function ProtectedRoute() {
+export default function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   const { isAuthed, setAuthed, setUser } = useAuth();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await me(); 
+        const res = await me();
         if (res?.data?.username) setUser(res.data.username);
         setAuthed(true);
       } catch {
@@ -22,5 +22,5 @@ export default function ProtectedRoute() {
   }, [setAuthed, setUser]);
 
   if (checking) return <div className="p-6 text-sm">Checking session…</div>;
-  return isAuthed ? <Outlet /> : <Navigate to="/login" replace />;
+  return isAuthed ? (children ?? <Outlet />) : <Navigate to="/login" replace />;
 }
