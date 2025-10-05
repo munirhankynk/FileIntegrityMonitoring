@@ -39,7 +39,6 @@ public class FileEventService {
         fileEventRepository.save(fileEvent);
     }
     public List<FileEvent> find(UUID agentId, String eventType, LocalDateTime from, LocalDateTime to) {
-        // basit/performanssız ama çalışır; prod için Specification önerilir
         List<FileEvent> all = fileEventRepository.findAll();
         return all.stream()
                 .filter(e -> agentId == null || e.getAgent().getAgentId().equals(agentId))

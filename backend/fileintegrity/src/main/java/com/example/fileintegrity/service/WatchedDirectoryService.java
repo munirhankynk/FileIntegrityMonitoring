@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -33,7 +34,7 @@ public class WatchedDirectoryService {
         log.warn("[DELETE] Silme denemesi: {}", id);
         watchedDirectoryRepository.deleteById(id);
         boolean stillExists = watchedDirectoryRepository.existsById(id);
-        log.warn("[DELETE] Silindi mi? {}", !stillExists);
+        log.warn("[DELETE] Silindi mi? {}", Optional.of(!stillExists));
     }
 
     public void handleFileChange(UUID agentId, String filePath, String eventType) {

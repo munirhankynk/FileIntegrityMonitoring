@@ -66,15 +66,16 @@ public class JwtService implements TokenService {
         return username.equals(userDetails.getUsername()) && expiration.after(new Date());
     }
 
-    public ResponseCookie createJwtCookie(String value, int maxAge, String path) {
-        return ResponseCookie.from("jwt", value)
-                .sameSite("Lax")
-                .secure(false)
-                .httpOnly(false)
-                .maxAge(maxAge)
+    public ResponseCookie createJwtCookie(String jwt, int maxAgeSeconds, String path) {
+        return ResponseCookie.from("jwt", jwt)
+                .httpOnly(true)
+                .secure(true)             // FE https
+                .sameSite("None")         // cross-site cookie
                 .path(path)
+                .maxAge(maxAgeSeconds)
                 .build();
     }
+
 
     public void resetJwtCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie("jwt", null);

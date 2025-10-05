@@ -7,5 +7,7 @@ export type AgentDto = {
   lastHeartbeat: string;          // LocalDateTime -> ISO string
 };
 
-export const listAgents = () => api.get<AgentDto[]>("/api/agent/list");
-export const getAgent   = (id: string) => api.get<AgentDto>(`/api/agent/${id}`);
+export const listAgents = () => 
+  api.get<AgentDto[]>("/api/agent/list");
+export const getAgent   = (id: string) => 
+  api.get<AgentDto>(`/api/agent/${id}`);

@@ -1,5 +1,7 @@
 import os
 import json
+from pathlib import Path
+import requests
 import time
 import requests
 import schedule
@@ -8,23 +10,32 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 
+CONFIG_PATH = Path(__file__).with_name("config.json")
 def load_config():
     try:
-        with open("config.json", "r") as f:
-            return json.load(f)
+        with CONFIG_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            print("[CONFIG] Loaded from:", CONFIG_PATH)  # debug
+            print("[CONFIG] Data:", data)                # debug
+            return data
     except FileNotFoundError:
+        print("[CONFIG] NOT FOUND at:", CONFIG_PATH)
+        return {}
+    except Exception as e:
+        print("[CONFIG] Failed to load:", e)
         return {}
 
 config = load_config()
-BACKEND_URL = config.get("backend_url")
-AGENT_ID = config.get("agent_id")
+BACKEND_URL = config.get("backend_url") or "https://localhost:8443"
+AGENT_ID = config.get("agent_id") or "default-agent"
 ACTIVATION_TOKEN = config.get("activation_token")
 USERNAME = config.get("username")
 PASSWORD = config.get("password")
-WATCH_DIRS = config.get("watch_dirs")
-HEARTBEAT_INTERVAL = config.get("heartbeat_interval")
+WATCH_DIRS = config.get("watch_dirs") or []
+HEARTBEAT_INTERVAL = config.get("heartbeat_interval") or 5
 
 SESSION = requests.Session()
+SESSION.verify = r"C:\Users\Labran\AppData\Local\mkcert\rootCA.pem"
 
 # Kimlik doğrulama 
 def authenticate():

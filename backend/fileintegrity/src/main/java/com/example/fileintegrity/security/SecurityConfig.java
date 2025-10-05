@@ -3,9 +3,12 @@ package com.example.fileintegrity.security;
 import com.example.fileintegrity.service.UserService;
 import com.example.fileintegrity.util.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -21,7 +24,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -45,23 +50,18 @@ public class SecurityConfig {
 
         return http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(req -> req
                         // Public endpoints
                         .requestMatchers("/api/v1/public/authentication/**").permitAll()
                         .requestMatchers("/api/v1/public/user/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // Agent CLI için gerekirse (ör: aktivasyon public olacaksa)
                         .requestMatchers("/api/agent/activate").permitAll()
-
                         // Protected endpoints
                         .requestMatchers("/api/v1/**").authenticated()
                         .requestMatchers("/api/agent/**").authenticated()
                         .requestMatchers("/user/admin/**").hasRole("ADMIN")
-
                         // Staff örneği
                         .requestMatchers("/auth/signup/**").hasAnyRole("STAFF_ADMIN", "STAFF_ACCOUNT_MANAGER")
-
                         .anyRequest().denyAll()
                 )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -98,37 +98,22 @@ public class SecurityConfig {
         return (request, response, exception) ->
                 handlerExceptionResolver.resolveException(request, response, null, exception);
     }
-
     @Bean
-    public CorsFilter corsFilter() {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
         CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(List.of(
-                "https://localhost:5173", // Vite dev (HTTPS)
-                "http://localhost:5173",  // Vite dev (HTTP fallback)
-                "http://localhost:3000",
-                "http://localhost:3001"
-        ));
-
+        // Geliştirirken hepsine izin ver → "*" , daha sonra sadece 5173’e sıkılaştır
+        config.setAllowedOriginPatterns(List.of("https://localhost:5173", "http://localhost:5173"));
         config.setAllowCredentials(true);
-
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        config.setAllowedHeaders(List.of(
-                HttpHeaders.AUTHORIZATION,
-                HttpHeaders.CONTENT_TYPE,
-                "X-Requested-With",
-                "X-XSRF-TOKEN"
-        ));
-
-        config.setExposedHeaders(List.of(
-                HttpHeaders.AUTHORIZATION,
-                HttpHeaders.SET_COOKIE
-        ));
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
+
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // En üste koy
+        return bean;
     }
 }
+
 
